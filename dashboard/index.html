@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Code Review Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; }
+    .badge-critical { background:#fca5a5;color:#7f1d1d; }
+    .badge-high     { background:#fed7aa;color:#7c2d12; }
+    .badge-medium   { background:#fef08a;color:#713f12; }
+    .badge-low      { background:#bfdbfe;color:#1e3a5f; }
+    .badge { display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700; }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2">🤖 AI Code Review Dashboard</h1>
+    <p class="text-slate-400 mb-8">Live overview of all pull request reviews</p>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-8" id="stats">
+      <div class="card text-center">
+        <div class="text-4xl font-bold text-indigo-400" id="stat-total">—</div>
+        <div class="text-slate-400 mt-1">Total PRs Reviewed</div>
+      </div>
+      <div class="card text-center">
+        <div class="text-4xl font-bold text-emerald-400" id="stat-score">—</div>
+        <div class="text-slate-400 mt-1">Avg Code Score</div>
+      </div>
+      <div class="card text-center">
+        <div class="text-4xl font-bold text-rose-400" id="stat-issues">—</div>
+        <div class="text-slate-400 mt-1">Total Issues Found</div>
+      </div>
+    </div>
+
+    <!-- Chart + Table -->
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="card">
+        <h2 class="font-semibold mb-4 text-slate-300">Score Distribution</h2>
+        <canvas id="scoreChart" height="180"></canvas>
+      </div>
+      <div class="card">
+        <h2 class="font-semibold mb-4 text-slate-300">Issues by Severity</h2>
+        <canvas id="severityChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Review list -->
+    <div class="card">
+      <h2 class="font-semibold mb-4 text-slate-300">Recent Reviews</h2>
+      <div id="review-list" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    async function load() {
+      const [statsRes, reviewsRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/reviews'),
+      ]);
+      const stats   = await statsRes.json();
+      const reviews = await reviewsRes.json();
+
+      document.getElementById('stat-total').textContent  = stats.total;
+      document.getElementById('stat-score').textContent  = stats.avg_score || '—';
+      document.getElementById('stat-issues').textContent = stats.total_issues;
+
+      // Score chart
+      const scores = reviews.map(r => r.score);
+      new Chart(document.getElementById('scoreChart'), {
+        type: 'bar',
+        data: {
+          labels: reviews.map((r,i) => `PR #${r.pr_number}`),
+          datasets: [{ label: 'Score', data: scores,
+            backgroundColor: scores.map(s => s >= 7 ? '#34d399' : s >= 4 ? '#fbbf24' : '#f87171') }],
+        },
+        options: { scales: { y: { min:0, max:10 } }, plugins: { legend: { display:false } } },
+      });
+
+      // Severity chart
+      const sev = { critical:0, high:0, medium:0, low:0 };
+      reviews.forEach(r => (r.review?.issues || []).forEach(i => { if(sev[i.severity]!==undefined) sev[i.severity]++; }));
+      new Chart(document.getElementById('severityChart'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(sev),
+          datasets: [{ data: Object.values(sev), backgroundColor: ['#f87171','#fb923c','#fbbf24','#60a5fa'] }],
+        },
+      });
+
+      // Review list
+      const list = document.getElementById('review-list');
+      if (!reviews.length) { list.innerHTML = '<p class="text-slate-500">No reviews yet.</p>'; return; }
+      list.innerHTML = reviews.slice().reverse().map(r => `
+        <div class="border border-slate-700 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-medium">${r.repo} — PR #${r.pr_number}</span>
+            <span class="text-sm font-bold ${scoreColor(r.score)}">Score: ${r.score}/10</span>
+          </div>
+          <p class="text-slate-400 text-sm mb-2">${r.pr_title || '(no title)'}</p>
+          <div class="flex gap-2 flex-wrap">
+            ${(r.review?.issues||[]).map(i => `<span class="badge badge-${i.severity}">${i.severity}: ${i.issue.slice(0,40)}</span>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+    function scoreColor(s){ return s>=7?'text-emerald-400':s>=4?'text-yellow-400':'text-rose-400'; }
+    load();
+    setInterval(load, 10000);
+  </script>
+</body>
+</html>

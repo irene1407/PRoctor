@@ -1,0 +1,52 @@
+name: Weekly Model Retrain
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"   # Every Sunday at 03:00 UTC
+  workflow_dispatch:        # Also allows manual trigger from the Actions tab
+    inputs:
+      max_prs:
+        description: "Max PRs to collect"
+        required: false
+        default: "100"
+      n_epochs:
+        description: "Training epochs"
+        required: false
+        default: "3"
+
+jobs:
+  retrain:
+    name: Collect data & fine-tune model
+    runs-on: ubuntu-latest
+    timeout-minutes: 180   # Fine-tuning can take up to 2 hours
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run retrain script
+        env:
+          OPENAI_API_KEY:  ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN:    ${{ secrets.GH_TOKEN }}
+          TARGET_OWNER:    ${{ github.repository_owner }}
+          TARGET_REPO:     ${{ github.event.repository.name }}
+          MAX_PRS:         ${{ github.event.inputs.max_prs || '100' }}
+          N_EPOCHS:        ${{ github.event.inputs.n_epochs || '3' }}
+        run: python scripts/retrain.py
+
+      - name: Commit updated model ID
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add finetune_data/model_id.txt || true
+          git diff --cached --quiet || git commit -m "chore: update fine-tuned model ID [skip ci]"
+          git push || true
