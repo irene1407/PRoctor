@@ -84,21 +84,29 @@
 
 </div>
 
-## DEMO
+---
+
+<h3>DEMO</h3>
 
 See PRoctor in action reviewing a Pull Request containing a critical SQL injection vulnerability:
 
 <div align="center">
-  <img src="G:\ai-code-reviewer\screenshots\pr-review.png" alt="PRoctor Code Review Demo" width="800px" />
+  <img src="screenshots\pr-review.png" alt="PRoctor Code Review Demo" width="800px" />
 </div>
-## System Architecture
+
+---
+
+<h3>System Architecture</h3>
 
 PRoctor functions as a distributed local-first middleware system that bridges your secure local environment with GitHub's event ecosystem.
 
 <div align="center">
-  <img src="G:\ai-code-reviewer\screenshots\architecture.png" alt="PRoctor System Architecture Diagram" width="800px" />
+  <img src="screenshots\architecture.png" alt="PRoctor System Architecture Diagram" width="800px" />
 </div>
-## FEATURES
+
+---
+
+<h3>FEATURES</h3>
 
 | Feature | Details |
 | :--- | :--- |
@@ -115,7 +123,7 @@ PRoctor functions as a distributed local-first middleware system that bridges yo
 
 ---
 
-## TECH STACK
+<h3>TECH STACK</h3>
 
 ```text
 Language      Python 3.11
@@ -175,22 +183,22 @@ cd ai-code-reviewer
 - A GitHub account + personal access token (`repo` scope)
 - [ngrok](https://ngrok.com/download) (free account)
 ---
-### Step 1 — Clone the repo
+### — Clone the repo
 ```
 bash
 git clone https://github.com/YOUR-USERNAME/PRoctor.git
 cd PRoctor
 ```
 
-### Step 2 — Install dependencies
+### — Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
-### 3 — Download the AI model
+### — Download the AI model
 ```bash
 ollama pull llama3
 ```
-### 4 — Set up environment variables
+### — Set up environment variables
 ```bash
 cp .env.example .env
 ```
@@ -200,7 +208,7 @@ cp .env.example .env
 | `GITHUB_TOKEN` | [GitHub Token Settings](https://github.com/settings/tokens) — requires **`repo`** scope |
 | `GITHUB_WEBHOOK_SECRET` | You choose this — set the exact same value inside your GitHub repository webhook settings |
 
-### 3. Run the server
+### 2. Run the server
 Open `.env` and fill in:
 ```env
 GITHUB_TOKEN=ghp_your_token_here
@@ -208,34 +216,33 @@ GITHUB_WEBHOOK_SECRET=pick_any_password
 FLASK_SECRET_KEY=another_random_string
 PORT=5001
 ```
-### 5 — Start the Flask server
+### — Start the Flask server
 ```bash
 python -m flask --app app.webhook_handler run --port 5001
 ```
-### 6 — Expose it with ngrok
+### — Expose it with ngrok
 ```bash
 ngrok http 5001
 # Copy the https://xxxxx.ngrok-free.app URL
 ```
-### 3. Webhook Configuration
+### 3.Webhook Configuration
 Follow these steps to link your local server instance directly to your GitHub repository:
 1. Navigate to your repository page on GitHub, then go to **Settings** → **Webhooks** → **Add webhook**.
 2. Configure the configuration fields with the matching parameter metrics:
 | Field | Value / Setting |
-| :--- | :--- |
 | **Payload URL** | Your active public tunnel address (e.g., `https://xxxxx.ngrok-free.app/webhook`) |
 | **Content type** | `application/json` |
 | **Secret** | The exact string sequence assigned to `GITHUB_WEBHOOK_SECRET` in your `.env` profile |
 | **Trigger Events** | Select **Let me select individual events**, check **Pull requests**, and disable everything else. |
 
 ---
-### 6. Open a Pull Request
+### 4. Open a Pull Request
 
 **The bot will automatically post a review comment!**
 
 ---
 
-## Dashboard
+## 5.Dashboard
 
 Open `dashboard/index.html` in your browser while the server is running to view live metrics:
 * **Score trends** across all reviewed PRs
@@ -244,7 +251,7 @@ Open `dashboard/index.html` in your browser while the server is running to view 
 
 ---
 
-## Fine-Tuning Pipeline
+## 6.Fine-Tuning Pipeline
 
 Train a custom model on your own team's PR history so reviews accurately match your codebase's specific patterns, terminology, and engineering standards.
 
@@ -274,7 +281,7 @@ The underlying code tracking framework includes specialized pipeline infrastruct
 | `notebooks/05_fine_tuning_pipeline.ipynb` | Comprehensive walkthrough notebook detailing pipeline engineering with interactive cost estimation. |
 | `tests/test_fine_tuner.py` | Dedicated test suite executing unit tests across all newly integrated pipeline modules. |
 ---
-## Jupyter Notebooks
+## 7.Jupyter Notebooks
 Five step-by-step notebooks walk through every component:
 ```bash
 cd notebooks
